@@ -1,198 +1,399 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:camera/camera.dart';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
+
+import 'package:camera/camera.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 
 import 'RemoveBackground.dart';
-import 'loadBackground.dart';
+import 'RemoveBackground2.dart';
 
 
 Future<void> main() async {
-  // Ensure that plugin services are initialized so that `availableCameras()`
-  // can be called before `runApp()`
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Obtain a list of the available cameras on the device.
-  final cameras = await availableCameras();
-
-  // Get a specific camera from the list of available cameras.
-  final firstCamera = cameras[1];
 
   runApp(
     MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: TakePictureScreen(
-        // Pass the appropriate camera to the TakePictureScreen widget.
-        camera: firstCamera,
+      home: CameraScreen(
       ),
     ),
   );
 }
 
-// A screen that allows users to take a picture using a given camera.
-class TakePictureScreen extends StatefulWidget {
-  final CameraDescription camera;
-
-  const TakePictureScreen({
-    Key key,
-    @required this.camera,
-  }) : super(key: key);
+class CameraScreen extends StatefulWidget {
+  const CameraScreen({Key key}) : super(key: key);
 
   @override
-  TakePictureScreenState createState() => TakePictureScreenState();
+  CameraScreenState createState() => CameraScreenState();
 }
 
-class TakePictureScreenState extends State<TakePictureScreen> {
+class CameraScreenState extends State<CameraScreen>
+    with AutomaticKeepAliveClientMixin {
   CameraController _controller;
-  Future<void> _initializeControllerFuture;
+  List<CameraDescription> _cameras;
+  int turns;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
 
   @override
   void initState() {
+    _initCamera();
     super.initState();
-    // To display the current output from the Camera,
-    // create a CameraController.
-    _controller = CameraController(
-      // Get a specific camera from the list of available cameras.
-      widget.camera,
-      // Define the resolution to use.
-      ResolutionPreset.high,
-    );
-    // Next, initialize the controller. This returns a Future.
-    _initializeControllerFuture = _controller.initialize();
   }
 
+  Future<void> _initCamera() async {
+    _cameras = await availableCameras();
+    _controller = CameraController(_cameras[0], ResolutionPreset.high);
+    _controller.initialize().then((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
+    });
+  }
 
   @override
   void dispose() {
-    // Dispose of the controller when the widget is disposed.
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+    if (_controller != null) {
+      if (!_controller.value.isInitialized) {
+        return Container();
+      }
+    } else {
+      return const Center(
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (!_controller.value.isInitialized) {
+      return Container();
+    }
     return Scaffold(
-      appBar: AppBar(title: Text('Do An Tin 2020')),
-      // Wait until the controller is initialized before displaying the
-      // camera preview. Use a FutureBuilder to display a loading spinner
-      // until the controller has finished initializing.
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            // If the Future is complete, display the preview.
-            return CameraPreview(_controller);
-          } else {
-            // Otherwise, display a loading indicator.
-            return Center(child: CircularProgressIndicator());
+        backgroundColor: Theme.of(context).backgroundColor,
+        key: _scaffoldKey,
+        extendBody: true,
+        appBar:  AppBar(
+          title: Text('INFORMATION PROJECT 2020',style: TextStyle(color: Colors.black),),
+          backgroundColor: Colors.orangeAccent,
+          centerTitle: true,     ),
+        body:NativeDeviceOrientationReader(builder: (context) {
+          NativeDeviceOrientation orientation = NativeDeviceOrientationReader.orientation(context);
+         // int turns;
+          switch (orientation) {
+            case NativeDeviceOrientation.landscapeLeft:
+              turns = -1;
+              break;
+            case NativeDeviceOrientation.landscapeRight:
+              turns = 1;
+              break;
+            case NativeDeviceOrientation.portraitDown:
+              turns = 2;
+              break;
+            default:
+              turns = 0;
+              break;
           }
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.camera_alt),
-        // Provide an onPressed callback.
-        onPressed: () async {
-          // Take the Picture in a try / catch block. If anything goes wrong,
-          // catch the error.
-          try {
-            // Ensure that the camera is initialized.
-            await _initializeControllerFuture;
-
-            // Construct the path where the image should be saved using the
-            // pattern package.
-            final path = join(
-              // Store the picture in the temp directory.
-              // Find the temp directory using the `path_provider` plugin.
-              (await getTemporaryDirectory()).path,
-              '${DateTime.now()}.png',
-            );
-
-            // Attempt to take a picture and log where it's been saved.
-            await _controller.takePicture(path);
-
-            // If the picture was taken, display it on a new screen.
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                //builder: (context) => RemoveBackground(imagePath: path),
-                   builder: (context) => DisplayPictureScreen(imagePath: path),
-              ),
-            );
-          } catch (e) {
-            // If an error occurs, log the error to the console.
-            print(e);
-          }
-        },
-      ),
+          return Stack(
+              children: <Widget>[
+                RotatedBox(
+                  quarterTurns: turns,
+                  child: _buildCameraPreview(),
+                ),
+              ]
+          );
+        }
+        )
     );
   }
-}
 
-// A widget that displays the picture taken by the user.
-//StatelessWidget
-class DisplayPictureScreen extends StatefulWidget {
-  final String imagePath;
 
-  const DisplayPictureScreen({Key key, this.imagePath}) : super(key: key);
+  Widget _buildCameraPreview() {
+    return Scaffold(
+        body: body(context)
+    );
+  }
+
+  Widget body(BuildContext context) {
+    if(MediaQuery.of(context).orientation == Orientation.portrait)
+    {
+      return portrait();
+    }
+    else {
+      return landscape();
+    }
+  }
+
+
+  Widget portrait() {
+    return Stack(
+      children: <Widget>[
+        Center(
+                child: CameraPreview(_controller),),
+//            ),
+//          ),
+//        ),
+        Container(
+          height: 600,
+          width: 360,
+          alignment: Alignment.bottomCenter,
+          child: Container(
+              width: 60.0,
+              height: 60.0,
+              child: new FloatingActionButton(
+                shape: new CircleBorder(),
+                elevation: 0.0,
+                child: Icon(Icons.camera_alt,
+                size: 40,),
+                onPressed: () async {
+                  try {
+                    final path = join(
+                      (await getTemporaryDirectory()).path, '${DateTime.now()}.png',);
+                    await _controller.takePicture(path);
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (context) =>
+                          DisplayPictureScreen(imagePath: path,turns: turns,),),
+                    );
+                  } catch (e) {
+                    print(e);
+                  }
+                },
+              )
+          ),
+        ),
+        Container(
+          width: 350,
+          alignment: Alignment.topRight,
+          child:IconButton(
+            icon: Icon(
+              Icons.switch_camera,
+              size: 40,
+              color: Colors.tealAccent,
+            ),
+            onPressed: () {
+              _onCameraSwitch();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget landscape() {
+    return Stack(
+      children: <Widget>[
+        Center(
+          child: Transform.scale(
+            scale: 0.81/_controller.value.aspectRatio ,
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: _controller.value.aspectRatio,
+                child: CameraPreview(_controller),),
+            ),
+          ),
+        ),
+        Container(
+
+          color: Colors.transparent,
+          height: 665,
+          width: 360,
+          alignment: Alignment.bottomCenter,
+          child: Container(
+              width: 60.0,
+              height: 60.0,
+              child: new FloatingActionButton(
+                backgroundColor: Colors.tealAccent,
+                shape: new CircleBorder(),
+                elevation: 0.0,
+                child: Icon(Icons.camera_alt,
+                  size: 40,),
+                onPressed: () async {
+                  try {
+                    final path = join(
+                      (await getTemporaryDirectory()).path, '${DateTime.now()}.png',);
+                    await _controller.takePicture(path);
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (context) =>
+                          DisplayPictureScreen(imagePath: path,turns: turns,),),
+                    );
+                  } catch (e) {
+                    print(e);
+                  }
+                },
+              )
+          ),
+        ),
+        Container(
+          alignment: Alignment.bottomRight,
+          child:IconButton(
+            icon: Icon(
+              Icons.switch_camera,
+              size: 40,
+              color: Colors.tealAccent,
+            ),
+            onPressed: () {
+              _onCameraSwitch();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Future<void> _onCameraSwitch() async {
+    final CameraDescription cameraDescription =
+    (_controller.description == _cameras[0]) ? _cameras[1] : _cameras[0];
+    if (_controller != null) {
+      await _controller.dispose();
+    }
+    _controller = CameraController(cameraDescription, ResolutionPreset.high);
+    _controller.addListener(() {
+      if (mounted) setState(() {});
+      if (_controller.value.hasError) {
+        showInSnackBar('Camera error ${_controller.value.errorDescription}');
+      }
+    });
+
+    try {
+      await _controller.initialize();
+    } on CameraException catch (e) {
+      _showCameraException(e);
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _showCameraException(CameraException e) {
+    logError(e.code, e.description);
+    showInSnackBar('Error: ${e.code}\n${e.description}');
+  }
+
+  void showInSnackBar(String message) {
+    _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void logError(String code, String message) =>
+      print('Error: $code\nError Message: $message');
 
   @override
+  bool get wantKeepAlive => true;
+}
+
+
+class DisplayPictureScreen extends StatefulWidget {
+  final String imagePath;
+  final int turns;
+  const DisplayPictureScreen({Key key, this.imagePath,this.turns}) : super(key: key);
+
   _DisplayPictureScreenState createState() => _DisplayPictureScreenState();
 }
-class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
+class _DisplayPictureScreenState extends State<DisplayPictureScreen>{
   String imagePath;
+  int turns;
+
   @override
   void initState() {
     imagePath = widget.imagePath;
+    turns = widget.turns;
+    super.initState();
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text('Display the Picture'),
-          actions: [
-            FloatingActionButton.extended(
-                label: Text('BackGround'),
-                heroTag: "btn4",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => BackGround(path: imagePath)),
-                  );
-                })
-          ],
-        ),
-        // The image is stored as a file on the device. Use the `Image.file`
-        // constructor with the given path to display the image.
-        body: Image.file(File(imagePath),),
-        bottomNavigationBar: BottomAppBar(
-          child: Container(
-            height: 56.0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                IconButton(
+      appBar:  AppBar(title: Text('INFORMATION PROJECT',style: TextStyle(color: Colors.black),),
+        backgroundColor: Colors.orangeAccent,
+        centerTitle: true,),
+          body: Stack(
+            children: <Widget>[
+              Container(
+                child:Center(
+                  child:  new Image.file(File(imagePath),
+                    ),
+                ),
+              ),
+              Container(
+                alignment: Alignment.bottomLeft,
+                margin: EdgeInsets.only(
+                    left: 30),
+                child: IconButton(
+                  iconSize: 40,
+                  color: Colors.tealAccent,
                   icon: Icon(Icons.share),
                   onPressed: () => _shareFile(),
                 ),
-                IconButton(
-                  icon: Icon(Icons.save),
+              ),
+              Container(
+                alignment: Alignment.bottomRight,
+                margin: EdgeInsets.only(
+                right: 30,),
+                child: IconButton(
+                  color: Colors.tealAccent,
+                  iconSize: 40,
+                  icon: Icon(Icons.save_alt),
                   onPressed: () => _showMyDialog(),
                 ),
-              ],
-            ),
+              ),
+              Container(
+                  alignment: Alignment.bottomCenter,
+                  margin: EdgeInsets.only(
+                    bottom: 5,),
+                  child:IconButton(
+                      color: Colors.tealAccent,
+                      icon: Icon(
+                        Icons.add_circle_outline,
+                        size: 40,),
+                      onPressed: ()
+                      {if (turns==-1 ) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                        builder: (context) => BackGround2(path: imagePath)),
+                        );
+                      }
+                      else if (turns== 1 ) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => BackGround2(path: imagePath)),
+                        );
+                      }
+                      else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => BackGround(path: imagePath)),
+                        );
+                      }
+                      }
+                      )
+              ),
+            ],
           ),
-        )
-    );
+        backgroundColor:Colors.black12 ,
+      );
   }
 
   _shareFile() async {
@@ -214,25 +415,34 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Saving image'),
+          backgroundColor: Colors.orangeAccent,
+          title: Text(
+            'Saving image',
+            style: TextStyle(color: Colors.black),),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Do you want to save this image?'),
+                Text(
+                  'Do you want to save this image?',
+                  style: TextStyle(color: Colors.black),),
               ],
             ),
           ),
           actions: <Widget>[
             FlatButton(
-              child: Text('Yes'),
+              child: Text(
+                  'No',
+                style: TextStyle(color: Colors.black),),
               onPressed: () {
-                _saveImage();
                 Navigator.of(context).pop();
               },
             ),
             FlatButton(
-              child: Text('No'),
+              child: Text(
+                  'Yes',
+                style: TextStyle(color: Colors.black),),
               onPressed: () {
+                _saveImage();
                 Navigator.of(context).pop();
               },
             ),
@@ -241,5 +451,4 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
       },
     );
   }
-
 }

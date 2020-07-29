@@ -9,17 +9,17 @@ import 'package:gallery_saver/gallery_saver.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 
-class RemoveBackground extends StatefulWidget {
+class RemoveBackground2 extends StatefulWidget {
 
   final String imagePath;
   final String url;
-  const RemoveBackground({Key key, this.imagePath, @required this.url}) : super(key: key);
+  const RemoveBackground2({Key key, this.imagePath, @required this.url}) : super(key: key);
 
   @override
-  _RemoveBackgroundState createState() => _RemoveBackgroundState();
+  _RemoveBackgroundState2 createState() => _RemoveBackgroundState2();
 }
 
-class _RemoveBackgroundState extends State<RemoveBackground> {
+class _RemoveBackgroundState2 extends State<RemoveBackground2> {
 
   String imagePath;
   String url;
@@ -35,13 +35,12 @@ class _RemoveBackgroundState extends State<RemoveBackground> {
 
   Uint8List bmp;
   BMP332Header header;
-  bool visible = true;
 
   //init state to load model
   @override
   void initState() {
     imagePath = widget.imagePath;
-    url = widget.url;
+    url=widget.url;
     super.initState();
     _busy = true;
     _image = File(imagePath);
@@ -60,7 +59,7 @@ class _RemoveBackgroundState extends State<RemoveBackground> {
       labels: "assets/deeplabv3_257_mv_gpu.txt",
     );
   }
-  //load and decode background image
+
   loadBackgroundImage() async {
     ByteData backgroundData = await rootBundle.load(url);
     Uint8List backgroundBytes = Uint8List.view(backgroundData.buffer);
@@ -84,30 +83,29 @@ class _RemoveBackgroundState extends State<RemoveBackground> {
     //resize va lay thong tin pixel cua mask image
     image_pub.Image image_recogn = image_pub.decodeImage(recognitions);
     image_pub.Image image_recogn_resize = image_pub.copyResize(
-        image_recogn, width: 720, height: 1280); // portrait only
+    image_recogn, width:1280 , height: 720);
     mask_image = image_recogn_resize.getBytes();
 
     image_pub.Image _image_orgiginal = image_pub.decodeImage(
         _image.readAsBytesSync());
     original_image = _image_orgiginal.getBytes();
 
-
-    for (int k = 0; k < 1280; k++)
+    for (int k = 0; k < 720; k++)
     {
-      for (int t=0; t < 2880; t++)
+      for (int t=0; t < 5120; t++)
       {
-        if (mask_image[2880*(1279-k)+t] == 0)
+        if (mask_image[5120*(719-k)+t] == 0)
         {
-          masked_image[2880 * k + t] = background_image_decoded[2880 * (1279 - k) + t];
+          masked_image[5120 * k + t] = background_image_decoded[5120 * (719 - k) + t];
         }
         else
         {
-          masked_image[2880 * k + t] = original_image[2880 * (1279 - k) + t];
+          masked_image[5120 * k + t] = original_image[5120 * (719 - k) + t];
         }
       }
     }
 
-    header = BMP332Header(720, 1280); //portrait
+    header = BMP332Header(1280, 720); //portrait
     bmp = header.appendBitmap(masked_image);
 
 
@@ -132,7 +130,6 @@ class _RemoveBackgroundState extends State<RemoveBackground> {
   @override
   Widget build(BuildContext context) {
     List<Widget> stackChildren = [];
-
     // when busy load a circular progress indicator
     if (_busy) {
       stackChildren.add(Positioned(
@@ -144,10 +141,12 @@ class _RemoveBackgroundState extends State<RemoveBackground> {
 
 //    // widget to show image preview, when preview not available default text is shown
     stackChildren.add(Center(
-        child:Opacity(
-          opacity : 1,
-          child:_image == null ? Center(
-            child: Text('Please Select an Image From Camera or Gallery'),) : Image.file(_image, fit: BoxFit.fill,),
+        child: Opacity(
+          opacity: 1,
+          child: _image == null
+              ? Center(
+            child: Text('Please Select an Image From Camera or Gallery'),)
+              : Image.file(_image, fit: BoxFit.fill,),
         )));
 
 
@@ -155,7 +154,8 @@ class _RemoveBackgroundState extends State<RemoveBackground> {
     stackChildren.add(Center(
         child: Opacity(
           opacity: 1,
-          child: _recognitions == null ? Center(child: Text(''),): Image.memory(bmp, fit: BoxFit.fill),)
+          child: _recognitions == null ? Center(child: Text(''),) : Image
+              .memory(bmp, fit: BoxFit.fill),)
     ),
     );
 
@@ -193,18 +193,19 @@ class _RemoveBackgroundState extends State<RemoveBackground> {
             Container(
                 alignment: Alignment.bottomCenter,
                 margin: EdgeInsets.only(
-                  bottom: 20,
-                  right: 10),
+                    bottom: 20,
+                    right: 10),
                 child:IconButton(
-                    icon: Icon(
-                      Icons.check,
-                      size: 60,
-                      color: Colors.tealAccent,),
-                    onPressed: runSegmentationProcess,
+                  icon: Icon(
+                    Icons.check,
+                    size: 60,
+                    color: Colors.tealAccent,),
+                  onPressed: runSegmentationProcess,
                 )
             ),
           ],
-        )
+        ),
+        backgroundColor: Colors.black12,
     );
   }
 
@@ -311,29 +312,25 @@ class BMP332Header {
 }
 
 
-class BackGround extends StatelessWidget {
+class BackGround2 extends StatelessWidget {
   final String path;
 
-  const BackGround({Key key, this.path}) : super(key: key);
+  const BackGround2({Key key, this.path}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     List choices = const [
       const Choice(
           title: 'Hinh 1',
-          imglink: 'assets/images/cloud.png'
+          imglink: 'assets/images/park.jpg'
       ),
       const Choice(
           title: 'Hinh 2',
-          imglink: 'assets/images/forest.png'
+          imglink: 'assets/images/mountain.jpg'
       ),
       const Choice(
-          title: 'Hinh 4',
-          imglink: 'assets/images/mountain.png'
-      ),
-      const Choice(
-          title: 'Hinh 5',
-          imglink: 'assets/images/road.png'
+          title: 'Hinh 3',
+          imglink: 'assets/images/village.jpg'
       ),
     ];
 
@@ -354,7 +351,7 @@ class BackGround extends StatelessWidget {
                 print(path);
                 Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) {
-                      return RemoveBackground(imagePath: path, url: choices[index].imglink,);
+                      return RemoveBackground2(imagePath: path, url: choices[index].imglink,);
                     }
                 ));
               },
@@ -364,7 +361,7 @@ class BackGround extends StatelessWidget {
         ),
         scrollDirection: Axis.vertical,
       ),
-      backgroundColor: Colors.white,
+ backgroundColor: Colors.white,
     );
   }
 }
@@ -402,12 +399,12 @@ class ChoiceCard extends StatelessWidget {
     return InkWell(
         onTap: onTap,
         child: Card(
-            color: Colors.white,
+            color: Colors.transparent,
             child: Column(
               children: [
                 new Container(
-                  height: 600 ,
-                  width:  650,
+                  height: 190 ,
+                  width:  190/720*1280,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     image: DecorationImage(
