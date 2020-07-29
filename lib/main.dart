@@ -11,8 +11,8 @@ import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 
-import 'RemoveBackground.dart';
-import 'RemoveBackground2.dart';
+import 'removeBackground_Portrait.dart';
+import 'removeBackground_Landscape.dart';
 
 
 Future<void> main() async {
