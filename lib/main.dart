@@ -147,9 +147,6 @@ class CameraScreenState extends State<CameraScreen>
       children: <Widget>[
         Center(
                 child: CameraPreview(_controller),),
-//            ),
-//          ),
-//        ),
         Container(
           height: 600,
           width: 360,
