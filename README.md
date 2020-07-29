@@ -4,6 +4,6 @@
 
 ## Hướng dẫn xem code
 
-Code chính được lưu trong thư mục /lib
-Các model của tensorflow lite và ảnh nền được lưu trong thư mục /assets
+- Code chính được lưu trong thư mục /lib
+- Các model của tensorflow lite và ảnh nền được lưu trong thư mục /assets
 
