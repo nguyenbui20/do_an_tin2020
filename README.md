@@ -1,6 +1,6 @@
-# firstapp
+# P.N.P APP
 
-A new Flutter application.
+Ứng dụng chụp ảnh chèn ảnh nền có chức năng lưu ảnh và chia sẻ ảnh qua các ứng dụng khác. 
 
 ## Getting Started
 
