@@ -1,4 +1,4 @@
-# P.N.P APP
+# INFORMATION PROJECT APP
 
 Ứng dụng chụp ảnh chèn ảnh nền có chức năng lưu ảnh và chia sẻ ảnh qua các ứng dụng khác. 
 
