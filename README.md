@@ -1,4 +1,4 @@
-# INFORMATION PROJECT APP
+# ĐỒ ÁN MÔ PHỎNG 
 
 Ứng dụng chụp ảnh chèn ảnh nền có chức năng lưu ảnh và chia sẻ ảnh qua các ứng dụng khác. 
 
@@ -8,7 +8,7 @@
 - Các model của tensorflow lite và ảnh nền được lưu trong thư mục /assets
 
 ## Sinh viên thực hiện
-
+Nhóm 1:
 - Bùi Trung Nguyên - 1612270
 - Trần Hoàng Phúc - 1612666
 - Nguyễn Ngọc Phát - 1612527
